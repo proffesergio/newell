@@ -26,8 +26,27 @@ curl http://localhost:8080/healthz    # {"status":"ok","service":"gateway"}
 docker compose -f infra/docker-compose.yml down
 ```
 
+## Run the app (backend + web login)
+Full end-to-end phone → OTP → profile login, backend (Docker) + frontend (Vite):
+
+```bash
+# terminal 1 — backend
+docker compose -f infra/docker-compose.yml up -d --build
+
+# terminal 2 — frontend
+cd web && npm install && npm run dev   # http://localhost:5173, proxies /api -> :8080
+```
+
+The one-time OTP is printed to the auth logs (mock SMS — no real SMS/keys):
+`docker compose -f infra/docker-compose.yml logs -f auth`
+
+Step-by-step walkthrough and troubleshooting: **`docs/RUNBOOK-p1.md`**.
+
 ## Layout
-- `libs/newell_common` — shared config, logging, errors, health
-- `services/gateway` — API gateway (entry point for the mobile app)
+- `libs/newell_common` — shared config, logging, errors, health, db, i18n, security
+- `services/gateway` — API gateway (JWT verify + reverse proxy; entry point for clients)
+- `services/auth` — phone-OTP login, JWT access + rotating refresh
+- `services/profile` — user profile + locale (en/bn)
+- `web/` — React + Vite + Tailwind + Framer Motion login app
 - `infra/` — docker-compose + env example
-- `docs/` — specs and plans
+- `docs/` — specs, plans, and the P1 runbook

@@ -8,3 +8,6 @@ pyenv/
 .ruff_cache/
 .env
 .DS_Store
+node_modules/
+web/node_modules/
+web/dist/

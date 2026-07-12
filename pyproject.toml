@@ -6,13 +6,27 @@ requires-python = ">=3.12"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["libs/newell_common/src", "services/gateway/src", "tests"]
+src = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+# FastAPI dependency-injection callables are used in argument defaults by design;
+# they are effectively immutable sentinels, so B008 must not flag them.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.File",
+]
+
 [tool.pytest.ini_options]
-pythonpath = ["libs/newell_common/src", "services/gateway/src"]
+pythonpath = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src"]
 testpaths = ["tests"]
 filterwarnings = [
     "error",

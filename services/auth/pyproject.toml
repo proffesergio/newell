@@ -3,14 +3,17 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "newell-gateway"
+name = "newell-auth"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "newell-common",
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
-    "httpx>=0.27",
+    "sqlalchemy>=2.0",
+    "asyncpg",
+    "aiosqlite",
+    "pyjwt",
 ]
 
 [tool.setuptools.packages.find]

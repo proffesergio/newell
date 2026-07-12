@@ -1,0 +1,8 @@
+{
+  "otp.sent": "Verification code sent.",
+  "otp.invalid": "Invalid or expired code.",
+  "otp.too_many": "Too many attempts. Request a new code.",
+  "auth.unauthorized": "Not authenticated.",
+  "profile.updated": "Profile updated.",
+  "profile.invalid_locale": "Locale must be 'en' or 'bn'."
+}

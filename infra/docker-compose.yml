@@ -45,6 +45,36 @@ services:
       timeout: 3s
       retries: 10
 
+  auth:
+    build:
+      context: ..
+      dockerfile: services/auth/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  profile:
+    build:
+      context: ..
+      dockerfile: services/profile/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   gateway:
     build:
       context: ..
@@ -59,6 +89,10 @@ services:
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      profile:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/healthz').status==200 else 1)\""]

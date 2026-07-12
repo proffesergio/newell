@@ -1,0 +1,96 @@
+@import "@fontsource/fraunces/400.css";
+@import "@fontsource/fraunces/500.css";
+@import "@fontsource/fraunces/600.css";
+@import "@fontsource/fraunces/600-italic.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Semantic theme tokens. Dark (ink-dominant) is the default; light
+ * (paper-dominant) overrides under prefers-color-scheme. Screens/components
+ * consume these via arbitrary-value Tailwind utilities, e.g.
+ * bg-[color:var(--surface)] text-[color:var(--on-surface)], so the whole
+ * app flips together instead of components hardcoding ink/paper.
+ */
+:root {
+  color-scheme: dark;
+  --bg-app: #12241b;
+  --on-surface: #f5f3ec;
+  --muted: #a7b8aa;
+  --card-bg: rgba(245, 243, 236, 0.05);
+  --card-border: rgba(167, 184, 170, 0.16);
+  --input-bg: rgba(18, 36, 27, 0.4);
+  --input-border: rgba(167, 184, 170, 0.3);
+  --code-bg: rgba(18, 36, 27, 0.6);
+  --error: #f2a390;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg-app: #f5f3ec;
+    --on-surface: #12241b;
+    --muted: #3a5a40;
+    --card-bg: rgba(18, 36, 27, 0.04);
+    --card-border: rgba(58, 90, 64, 0.16);
+    --input-bg: rgba(255, 255, 255, 0.55);
+    --input-border: rgba(58, 90, 64, 0.25);
+    --code-bg: rgba(18, 36, 27, 0.08);
+    --error: #b23b2e;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply font-body antialiased;
+  background: var(--bg-app);
+  color: var(--on-surface);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Self-contained grain texture, no external asset. Applied via .grain-surface. */
+.grain-surface {
+  position: relative;
+  isolation: isolate;
+}
+
+.grain-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 140px 140px;
+}
+
+/* Visible keyboard focus rings, respected across custom controls */
+:focus-visible {
+  outline: 2px solid #7be05a;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
