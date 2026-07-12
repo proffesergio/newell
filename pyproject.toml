@@ -1,0 +1,24 @@
+[project]
+name = "newell-workspace"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["libs/newell_common/src", "services/gateway/src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+pythonpath = ["libs/newell_common/src", "services/gateway/src"]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    # Third-party: FastAPI's testclient imports starlette's, which emits this at
+    # import time due to a starlette<->httpx version deprecation. Not our code.
+    # StarletteDeprecationWarning is not a DeprecationWarning subclass, so match
+    # by message only (category left blank = any warning class).
+    "ignore:Using `httpx` with `starlette.testclient`:",
+]
