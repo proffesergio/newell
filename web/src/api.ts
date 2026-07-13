@@ -2,6 +2,10 @@ import axios, { AxiosError } from "axios";
 
 const ACCESS_TOKEN_KEY = "newell.access_token";
 const REFRESH_TOKEN_KEY = "newell.refresh_token";
+const ROLE_KEY = "newell.role";
+const USER_ID_KEY = "newell.user_id";
+
+export type Role = "guest" | "user";
 
 /**
  * Minimal localStorage-backed token store. Shared by the axios interceptor
@@ -15,13 +19,23 @@ export const tokenStorage = {
   getRefresh(): string | null {
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
-  setTokens(access: string, refresh: string): void {
+  getRole(): Role | null {
+    return localStorage.getItem(ROLE_KEY) as Role | null;
+  },
+  getUserId(): string | null {
+    return localStorage.getItem(USER_ID_KEY);
+  },
+  setTokens(access: string, refresh: string, role: Role, userId: string): void {
     localStorage.setItem(ACCESS_TOKEN_KEY, access);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+    localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(USER_ID_KEY, userId);
   },
   clear(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(USER_ID_KEY);
   },
 };
 
@@ -29,12 +43,16 @@ export interface OtpRequestResponse {
   message: string;
 }
 
-export interface OtpVerifyResponse {
+export interface TokenPair {
   access_token: string;
   refresh_token: string;
   token_type: string;
   user_id: string;
+  role: Role;
 }
+
+export type OtpVerifyResponse = TokenPair;
+export type GuestLoginResponse = TokenPair;
 
 export type Locale = "en" | "bn";
 
@@ -67,6 +85,19 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Thrown whenever the backend responds 403 with error.code "signup_required"
+ * (a guest hitting a gated action, e.g. a 2nd plant or the plant list).
+ * The UI catches this specifically to show <SignupGate /> instead of a
+ * generic error message.
+ */
+export class SignupRequiredError extends ApiError {
+  constructor(message: string) {
+    super(message, "signup_required");
+    this.name = "SignupRequiredError";
+  }
+}
+
 const client = axios.create({
   baseURL: import.meta.env.VITE_GATEWAY_URL ?? "/api",
   headers: {
@@ -79,6 +110,11 @@ client.interceptors.request.use((config) => {
   if (access) {
     config.headers.set("Authorization", `Bearer ${access}`);
   }
+  // Let the browser set the multipart boundary itself for file uploads —
+  // the instance-level default of application/json would otherwise stick.
+  if (config.data instanceof FormData) {
+    config.headers.delete("Content-Type");
+  }
   return config;
 });
 
@@ -87,10 +123,12 @@ function toApiError(err: unknown): ApiError {
     const axiosErr = err as AxiosError<BackendErrorEnvelope>;
     const envelope = axiosErr.response?.data?.error;
     if (envelope) {
-      return new ApiError(
-        envelope.message ?? "Something went wrong. Please try again.",
-        envelope.code ?? "unknown"
-      );
+      const message = envelope.message ?? "Something went wrong. Please try again.";
+      const code = envelope.code ?? "unknown";
+      if (axiosErr.response?.status === 403 && code === "signup_required") {
+        return new SignupRequiredError(message);
+      }
+      return new ApiError(message, code);
     }
     if (axiosErr.request && !axiosErr.response) {
       return new ApiError(
@@ -111,9 +149,27 @@ export async function requestOtp(phone: string): Promise<OtpRequestResponse> {
   }
 }
 
-export async function verifyOtp(phone: string, code: string): Promise<OtpVerifyResponse> {
+export async function verifyOtp(
+  phone: string,
+  code: string,
+  guestUserId?: string
+): Promise<OtpVerifyResponse> {
   try {
-    const { data } = await client.post<OtpVerifyResponse>("/auth/otp/verify", { phone, code });
+    const { data } = await client.post<OtpVerifyResponse>("/auth/otp/verify", {
+      phone,
+      code,
+      guest_user_id: guestUserId,
+    });
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/** Anonymous entry point: mints a guest identity with no phone/OTP needed. */
+export async function guestLogin(): Promise<GuestLoginResponse> {
+  try {
+    const { data } = await client.post<GuestLoginResponse>("/auth/guest");
     return data;
   } catch (err) {
     throw toApiError(err);
@@ -132,6 +188,98 @@ export async function getProfile(): Promise<Profile> {
 export async function updateProfile(patch: ProfilePatch): Promise<Profile> {
   try {
     const { data } = await client.patch<Profile>("/profile/me", patch);
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+// --- Media -----------------------------------------------------------------
+
+export interface UploadResponse {
+  media_id: string;
+  url: string;
+  content_type: string;
+}
+
+export async function uploadPhoto(file: File): Promise<UploadResponse> {
+  try {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await client.post<UploadResponse>("/media/upload", form);
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+// --- Plants ------------------------------------------------------------------
+
+export interface Diagnosis {
+  health: string;
+  growth_stage: string;
+  pests: string[];
+  watering: string;
+  care_steps: string[];
+}
+
+export interface Plant {
+  plant_id: string;
+  name: string | null;
+  diagnosis: Diagnosis;
+  created_at: string;
+}
+
+export interface PlantSummary {
+  plant_id: string;
+  name: string | null;
+  created_at: string;
+  latest_diagnosis: Diagnosis | null;
+}
+
+export interface PlantListResponse {
+  plants: PlantSummary[];
+}
+
+export interface PlantLog {
+  image_ref: string;
+  diagnosis: Diagnosis;
+  created_at: string;
+}
+
+export interface PlantDetail {
+  plant_id: string;
+  name: string | null;
+  created_at: string;
+  logs: PlantLog[];
+}
+
+export interface CreatePlantPayload {
+  name?: string;
+  image_ref: string;
+}
+
+export async function createPlant(payload: CreatePlantPayload): Promise<Plant> {
+  try {
+    const { data } = await client.post<Plant>("/plants", payload);
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function listPlants(): Promise<PlantListResponse> {
+  try {
+    const { data } = await client.get<PlantListResponse>("/plants");
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function getPlant(id: string): Promise<PlantDetail> {
+  try {
+    const { data } = await client.get<PlantDetail>(`/plants/${id}`);
     return data;
   } catch (err) {
     throw toApiError(err);

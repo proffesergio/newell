@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from "react";
-import { ApiError, requestOtp } from "../api";
+import { ApiError, guestLogin, requestOtp, type GuestLoginResponse } from "../api";
 import Button from "../components/Button";
 import { themed } from "../theme";
 
 interface PhoneScreenProps {
   initialPhone: string;
   onCodeSent: (phone: string) => void;
+  onGuestContinue: (result: GuestLoginResponse) => void;
 }
 
 function isPlausiblePhone(value: string): boolean {
   return /^\+[1-9]\d{7,14}$/.test(value.trim());
 }
 
-export default function PhoneScreen({ initialPhone, onCodeSent }: PhoneScreenProps) {
+export default function PhoneScreen({ initialPhone, onCodeSent, onGuestContinue }: PhoneScreenProps) {
   const [phone, setPhone] = useState(initialPhone);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [guestBusy, setGuestBusy] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -33,6 +35,19 @@ export default function PhoneScreen({ initialPhone, onCodeSent }: PhoneScreenPro
       setError(err instanceof ApiError ? err.message : "Couldn't send a code. Try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleGuest() {
+    setError(null);
+    setGuestBusy(true);
+    try {
+      const result = await guestLogin();
+      onGuestContinue(result);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't start a guest session. Try again.");
+    } finally {
+      setGuestBusy(false);
     }
   }
 
@@ -70,9 +85,29 @@ export default function PhoneScreen({ initialPhone, onCodeSent }: PhoneScreenPro
         ) : null}
       </div>
 
-      <Button type="submit" busy={busy} className="w-full">
+      <Button type="submit" busy={busy} disabled={guestBusy} className="w-full">
         Send code
       </Button>
+
+      <div className="flex items-center gap-3" aria-hidden="true">
+        <span className="h-px flex-1 bg-[color:var(--card-border)]" />
+        <span className={`text-xs uppercase tracking-[0.14em] ${themed.muted}`}>or</span>
+        <span className="h-px flex-1 bg-[color:var(--card-border)]" />
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        busy={guestBusy}
+        disabled={busy}
+        onClick={() => void handleGuest()}
+        className="w-full"
+      >
+        Try as guest
+      </Button>
+      <p className={`-mt-3 text-center text-xs ${themed.muted} opacity-80`}>
+        Diagnose one plant, no phone number needed.
+      </p>
     </form>
   );
 }

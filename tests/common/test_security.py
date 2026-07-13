@@ -27,3 +27,15 @@ def test_invalid_token_raises_401():
     with pytest.raises(NewellError) as exc:
         decode_token("not-a-jwt")
     assert exc.value.status_code == 401
+
+
+def test_access_token_carries_role():
+    token = create_access_token("u1", role="guest")
+    claims = decode_token(token)
+    assert claims["sub"] == "u1"
+    assert claims["role"] == "guest"
+
+
+def test_access_token_role_defaults_to_user():
+    claims = decode_token(create_access_token("u1"))
+    assert claims["role"] == "user"

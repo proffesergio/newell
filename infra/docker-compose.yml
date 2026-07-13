@@ -75,6 +75,50 @@ services:
       timeout: 3s
       retries: 10
 
+  media:
+    build:
+      context: ..
+      dockerfile: services/media/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ai_gateway:
+    build:
+      context: ..
+      dockerfile: services/ai_gateway/Dockerfile
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  plantcare:
+    build:
+      context: ..
+      dockerfile: services/plantcare/Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai_gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/healthz').status==200 else 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   gateway:
     build:
       context: ..
@@ -93,6 +137,12 @@ services:
       auth:
         condition: service_healthy
       profile:
+        condition: service_healthy
+      media:
+        condition: service_healthy
+      ai_gateway:
+        condition: service_healthy
+      plantcare:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/healthz').status==200 else 1)\""]

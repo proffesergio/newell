@@ -1,65 +1,88 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthProvider, useAuth } from "./auth";
-import { ApiError, getProfile, type OtpVerifyResponse, type Profile } from "./api";
+import {
+  ApiError,
+  getProfile,
+  type GuestLoginResponse,
+  type OtpVerifyResponse,
+  type Plant,
+  type Profile,
+} from "./api";
 import GrowthStem, { type FlowStep } from "./components/GrowthStem";
 import PhoneScreen from "./screens/PhoneScreen";
 import OtpScreen from "./screens/OtpScreen";
 import ProfileScreen from "./screens/ProfileScreen";
+import GardenScreen from "./screens/GardenScreen";
+import UploadScreen from "./screens/UploadScreen";
 import { themed } from "./theme";
 
-type Screen = "phone" | "otp" | "profile";
+type Screen = "phone" | "otp" | "profile" | "garden" | "upload";
 
 const STEP_BY_SCREEN: Record<Screen, FlowStep> = {
   phone: 1,
   otp: 2,
   profile: 3,
+  garden: 3,
+  upload: 3,
 };
 
 function AppShell() {
-  const { isAuthed, login, logout } = useAuth();
-  const [screen, setScreen] = useState<Screen>(() => (isAuthed ? "profile" : "phone"));
+  const { isAuthed, isGuest, userId, login, logout } = useAuth();
+  const [screen, setScreen] = useState<Screen>(() => (isAuthed ? "garden" : "phone"));
   const [phone, setPhone] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [guestPlant, setGuestPlant] = useState<Plant | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
 
-  // If a token already exists in localStorage (returning session), skip
-  // straight to the profile screen instead of asking for phone + code again.
+  // Returning session (token already in localStorage): skip straight to the
+  // garden instead of asking for phone + code again.
   useEffect(() => {
     if (!isAuthed) return;
-    let cancelled = false;
-    getProfile()
-      .then((p) => {
-        if (cancelled) return;
-        setProfile(p);
-        setScreen("profile");
-      })
-      .catch(() => {
-        if (cancelled) return;
-        logout();
-      });
-    return () => {
-      cancelled = true;
-    };
+    setScreen("garden");
     // Only run this on initial mount / when auth flips true.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
-  async function handleVerified(result: OtpVerifyResponse) {
-    login({ accessToken: result.access_token, refreshToken: result.refresh_token });
+  function handleVerified(result: OtpVerifyResponse) {
+    login({
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+      role: result.role,
+      userId: result.user_id,
+    });
+    setGuestPlant(null);
+    setProfile(null);
+    setScreen("garden");
+  }
+
+  function handleGuestContinue(result: GuestLoginResponse) {
+    login({
+      accessToken: result.access_token,
+      refreshToken: result.refresh_token,
+      role: result.role,
+      userId: result.user_id,
+    });
+    setScreen("garden");
+  }
+
+  async function openProfile() {
+    setScreen("profile");
+    if (profile) return;
     try {
       const p = await getProfile();
       setProfile(p);
-      setScreen("profile");
     } catch (err) {
       setBootError(err instanceof ApiError ? err.message : "Couldn't load your profile.");
+      setScreen("garden");
     }
   }
 
   function handleLogout() {
     logout();
     setProfile(null);
+    setGuestPlant(null);
     setPhone("");
     setScreen("phone");
   }
@@ -75,6 +98,8 @@ function AppShell() {
         animate: { opacity: 1, y: 0 },
         exit: { opacity: 0, y: -28 },
       };
+
+  const transition = { duration: 0.32, ease: "easeOut" as const };
 
   return (
     <div className="grain-surface flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
@@ -98,7 +123,7 @@ function AppShell() {
                 initial={variants.initial}
                 animate={variants.animate}
                 exit={variants.exit}
-                transition={{ duration: 0.32, ease: "easeOut" }}
+                transition={transition}
               >
                 <PhoneScreen
                   initialPhone={phone}
@@ -106,6 +131,7 @@ function AppShell() {
                     setPhone(p);
                     setScreen("otp");
                   }}
+                  onGuestContinue={handleGuestContinue}
                 />
               </motion.div>
             ) : screen === "otp" ? (
@@ -114,12 +140,45 @@ function AppShell() {
                 initial={variants.initial}
                 animate={variants.animate}
                 exit={variants.exit}
-                transition={{ duration: 0.32, ease: "easeOut" }}
+                transition={transition}
               >
                 <OtpScreen
                   phone={phone}
+                  guestUserId={isGuest ? userId ?? undefined : undefined}
                   onVerified={handleVerified}
                   onEditPhone={() => setScreen("phone")}
+                />
+              </motion.div>
+            ) : screen === "garden" ? (
+              <motion.div
+                key="garden"
+                initial={variants.initial}
+                animate={variants.animate}
+                exit={variants.exit}
+                transition={transition}
+              >
+                <GardenScreen
+                  isGuest={isGuest}
+                  guestPlant={guestPlant}
+                  onAddPlant={() => setScreen("upload")}
+                  onSignUp={() => setScreen("phone")}
+                  onOpenProfile={() => void openProfile()}
+                />
+              </motion.div>
+            ) : screen === "upload" ? (
+              <motion.div
+                key="upload"
+                initial={variants.initial}
+                animate={variants.animate}
+                exit={variants.exit}
+                transition={transition}
+              >
+                <UploadScreen
+                  onDone={() => setScreen("garden")}
+                  onCreated={(plant) => {
+                    if (isGuest) setGuestPlant(plant);
+                  }}
+                  onSignUp={() => setScreen("phone")}
                 />
               </motion.div>
             ) : profile ? (
@@ -128,9 +187,14 @@ function AppShell() {
                 initial={variants.initial}
                 animate={variants.animate}
                 exit={variants.exit}
-                transition={{ duration: 0.32, ease: "easeOut" }}
+                transition={transition}
               >
-                <ProfileScreen profile={profile} onProfileChange={setProfile} onLogout={handleLogout} />
+                <ProfileScreen
+                  profile={profile}
+                  onProfileChange={setProfile}
+                  onLogout={handleLogout}
+                  onBack={() => setScreen("garden")}
+                />
               </motion.div>
             ) : (
               <motion.div
@@ -138,7 +202,7 @@ function AppShell() {
                 initial={variants.initial}
                 animate={variants.animate}
                 exit={variants.exit}
-                transition={{ duration: 0.32, ease: "easeOut" }}
+                transition={transition}
                 className={`text-sm ${themed.muted}`}
               >
                 Loading your profile…

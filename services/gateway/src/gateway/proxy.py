@@ -1,7 +1,7 @@
 import httpx
 from fastapi import APIRouter, Depends, Request, Response
 
-from gateway.auth_dep import current_user_id
+from gateway.auth_dep import current_identity, current_user_id
 from gateway.middleware import REQUEST_ID_HEADER
 from newell_common.config import get_settings
 
@@ -91,4 +91,45 @@ async def proxy_profile(
     settings = get_settings()
     return await _forward(
         client, settings.profile_url, request, extra_headers={"X-User-Id": user_id}
+    )
+
+
+@router.api_route("/media", methods=["GET", "POST", "PATCH", "DELETE"])
+@router.api_route("/media/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_media(
+    request: Request,
+    identity: tuple[str, str] = Depends(current_identity),
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> Response:
+    """Forward to the Media service, injecting the caller's user id and role.
+
+    Bodies (including multipart uploads, e.g. `/media/upload`) are forwarded
+    as raw bytes with the original Content-Type header, so multipart
+    boundaries are preserved untouched.
+    """
+    user_id, role = identity
+    settings = get_settings()
+    return await _forward(
+        client,
+        settings.media_url,
+        request,
+        extra_headers={"X-User-Id": user_id, "X-User-Role": role},
+    )
+
+
+@router.api_route("/plants", methods=["GET", "POST", "PATCH", "DELETE"])
+@router.api_route("/plants/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_plants(
+    request: Request,
+    identity: tuple[str, str] = Depends(current_identity),
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> Response:
+    """Forward to the Plantcare service, injecting the caller's user id and role."""
+    user_id, role = identity
+    settings = get_settings()
+    return await _forward(
+        client,
+        settings.plantcare_url,
+        request,
+        extra_headers={"X-User-Id": user_id, "X-User-Role": role},
     )

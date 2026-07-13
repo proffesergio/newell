@@ -4,5 +4,7 @@
   "otp.too_many": "অনেকবার চেষ্টা হয়েছে। নতুন কোড নিন।",
   "auth.unauthorized": "প্রমাণীকরণ করা হয়নি।",
   "profile.updated": "প্রোফাইল হালনাগাদ হয়েছে।",
-  "profile.invalid_locale": "লোকেল অবশ্যই 'en' অথবা 'bn' হতে হবে।"
+  "profile.invalid_locale": "লোকেল অবশ্যই 'en' অথবা 'bn' হতে হবে।",
+  "plantcare.signup_required": "আরও গাছ যোগ করতে সাইন আপ করুন।",
+  "plantcare.plant_not_found": "গাছটি পাওয়া যায়নি।"
 }

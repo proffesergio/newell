@@ -12,13 +12,14 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, role: str = "user") -> str:
     s = get_settings()
     payload = {
         "sub": subject,
         "type": "access",
         "iat": _now(),
         "exp": _now() + timedelta(seconds=s.access_ttl_seconds),
+        "role": role,
     }
     return jwt.encode(payload, s.jwt_secret, algorithm=s.jwt_algorithm)
 

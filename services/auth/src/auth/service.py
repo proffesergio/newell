@@ -1,4 +1,5 @@
 import secrets
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +34,22 @@ class AuthService:
         self.otps = OtpRepository(session)
         self.refresh_tokens = RefreshTokenRepository(session)
 
+    async def create_guest(self) -> dict:
+        user = User(phone=None, role="guest", locale="en")
+        await self.users.add(user)
+        await self.session.flush()
+
+        access_token = create_access_token(str(user.id), role=user.role)
+        refresh_raw = await self._issue_refresh_token(user.id)
+        await self.session.commit()
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_raw,
+            "user_id": str(user.id),
+            "role": user.role,
+        }
+
     async def request_otp(self, phone: str) -> None:
         code = f"{secrets.randbelow(1_000_000):06d}"
         otp = OtpCode(
@@ -46,7 +63,7 @@ class AuthService:
         await self.session.commit()
         self.sms.send(phone, f"Your Newell verification code is {code}")
 
-    async def verify_otp(self, phone: str, code: str) -> dict:
+    async def verify_otp(self, phone: str, code: str, guest_user_id: str | None = None) -> dict:
         otp = await self.otps.get_latest_active(phone)
         if otp is None:
             raise self._invalid_error()
@@ -59,13 +76,21 @@ class AuthService:
 
         otp.consumed = True
 
-        user = await self.users.get_by_phone(phone)
-        if user is None:
-            user = User(phone=phone, locale="en")
+        existing_by_phone = await self.users.get_by_phone(phone)
+        guest = await self._find_upgradable_guest(guest_user_id, phone, existing_by_phone)
+
+        if guest is not None:
+            guest.phone = phone
+            guest.role = "user"
+            user = guest
+        elif existing_by_phone is not None:
+            user = existing_by_phone
+        else:
+            user = User(phone=phone, role="user", locale="en")
             await self.users.add(user)
             await self.session.flush()
 
-        access_token = create_access_token(str(user.id))
+        access_token = create_access_token(str(user.id), role=user.role)
         refresh_raw = await self._issue_refresh_token(user.id)
         await self.session.commit()
 
@@ -73,15 +98,36 @@ class AuthService:
             "access_token": access_token,
             "refresh_token": refresh_raw,
             "user_id": str(user.id),
+            "role": user.role,
         }
+
+    async def _find_upgradable_guest(
+        self, guest_user_id: str | None, phone: str, existing_by_phone: User | None
+    ) -> User | None:
+        if guest_user_id is None:
+            return None
+        if existing_by_phone is not None:
+            # phone already belongs to another user; cannot upgrade the guest to it.
+            return None
+        try:
+            guest_id = uuid.UUID(guest_user_id)
+        except ValueError:
+            return None
+        candidate = await self.users.get(guest_id)
+        if candidate is None or candidate.role != "guest":
+            return None
+        return candidate
 
     async def refresh(self, refresh_token: str) -> dict:
         token = await self.refresh_tokens.get_by_hash(hash_token(refresh_token))
         if token is None or token.revoked or datetime.now(UTC) > _as_aware_utc(token.expires_at):
             raise self._unauthorized_error()
 
+        user = await self.users.get(token.user_id)
+        role = user.role if user is not None else "user"
+
         token.revoked = True
-        access_token = create_access_token(str(token.user_id))
+        access_token = create_access_token(str(token.user_id), role=role)
         refresh_raw = await self._issue_refresh_token(token.user_id)
         await self.session.commit()
 

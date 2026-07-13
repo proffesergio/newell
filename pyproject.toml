@@ -6,7 +6,7 @@ requires-python = ">=3.12"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src", "tests"]
+src = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src", "services/media/src", "services/ai_gateway/src", "services/plantcare/src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -26,7 +26,7 @@ extend-immutable-calls = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src"]
+pythonpath = ["libs/newell_common/src", "services/gateway/src", "services/auth/src", "services/profile/src", "services/media/src", "services/ai_gateway/src", "services/plantcare/src"]
 testpaths = ["tests"]
 filterwarnings = [
     "error",

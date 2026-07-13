@@ -15,3 +15,6 @@
 Enter the 6 digits → you land on the profile → edit the name, toggle en/bn, logout. Watch the seedling stem grow a leaf per step.
 
 Full walkthrough + troubleshooting: docs/RUNBOOK-p1.md.
+
+When you're done testing, tear the backend down with:
+docker compose -f infra/docker-compose.yml down

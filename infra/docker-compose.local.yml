@@ -1,0 +1,26 @@
+# LOCAL-ONLY override used during a Docker Hub outage (cannot pull python:3.12-slim).
+# Points the services that need (re)building at their Dockerfile.local variants,
+# which build FROM already-local Newell images and pull deps from PyPI only.
+# Usage:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.local.yml build \
+#       media ai_gateway plantcare gateway
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.local.yml up -d --no-build
+services:
+  auth:
+    build:
+      dockerfile: services/auth/Dockerfile.local
+  profile:
+    build:
+      dockerfile: services/profile/Dockerfile.local
+  gateway:
+    build:
+      dockerfile: services/gateway/Dockerfile.local
+  media:
+    build:
+      dockerfile: services/media/Dockerfile.local
+  ai_gateway:
+    build:
+      dockerfile: services/ai_gateway/Dockerfile.local
+  plantcare:
+    build:
+      dockerfile: services/plantcare/Dockerfile.local

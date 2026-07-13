@@ -31,7 +31,15 @@ async def verify_otp(
     body: OtpVerifyIn,
     service: AuthService = Depends(get_auth_service),
 ) -> TokenPairOut:
-    pair = await service.verify_otp(body.phone, body.code)
+    pair = await service.verify_otp(body.phone, body.code, guest_user_id=body.guest_user_id)
+    return TokenPairOut(**pair)
+
+
+@router.post("/guest", response_model=TokenPairOut)
+async def guest_login(
+    service: AuthService = Depends(get_auth_service),
+) -> TokenPairOut:
+    pair = await service.create_guest()
     return TokenPairOut(**pair)
 
 

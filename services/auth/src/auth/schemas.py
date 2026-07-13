@@ -12,6 +12,7 @@ class OtpRequestOut(BaseModel):
 class OtpVerifyIn(BaseModel):
     phone: str
     code: str
+    guest_user_id: str | None = None
 
 
 class TokenPairOut(BaseModel):
@@ -19,6 +20,7 @@ class TokenPairOut(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user_id: str
+    role: str
 
 
 class RefreshIn(BaseModel):

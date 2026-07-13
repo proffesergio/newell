@@ -1,0 +1,17 @@
+# Keep the Docker build context small: only source + packaging is needed.
+.git
+.github
+.claude
+.superpowers
+.venv
+pyenv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+web/node_modules
+web/dist
+docs
+infra/.env
+**/.DS_Store

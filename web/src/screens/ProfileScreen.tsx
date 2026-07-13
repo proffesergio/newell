@@ -8,6 +8,7 @@ interface ProfileScreenProps {
   profile: Profile;
   onProfileChange: (profile: Profile) => void;
   onLogout: () => void;
+  onBack?: () => void;
 }
 
 function truncateId(id: string): string {
@@ -20,7 +21,7 @@ const LOCALES: Array<{ code: Locale; label: string }> = [
   { code: "bn", label: "বাংলা" },
 ];
 
-export default function ProfileScreen({ profile, onProfileChange, onLogout }: ProfileScreenProps) {
+export default function ProfileScreen({ profile, onProfileChange, onLogout, onBack }: ProfileScreenProps) {
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +57,22 @@ export default function ProfileScreen({ profile, onProfileChange, onLogout }: Pr
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <h1 className={`font-display text-3xl font-medium ${themed.heading}`}>You're in.</h1>
-        <p className={`text-sm ${themed.muted}`}>
-          <span className="font-mono text-xs opacity-80">{truncateId(profile.user_id)}</span>
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className={`font-display text-3xl font-medium ${themed.heading}`}>You're in.</h1>
+          <p className={`text-sm ${themed.muted}`}>
+            <span className="font-mono text-xs opacity-80">{truncateId(profile.user_id)}</span>
+          </p>
+        </div>
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className={`shrink-0 text-xs underline decoration-current/40 underline-offset-2 ${themed.muted} hover:text-[color:var(--on-surface)]`}
+          >
+            Back to garden
+          </button>
+        ) : null}
       </header>
 
       <div className="flex flex-col gap-2">

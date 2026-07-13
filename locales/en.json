@@ -4,5 +4,7 @@
   "otp.too_many": "Too many attempts. Request a new code.",
   "auth.unauthorized": "Not authenticated.",
   "profile.updated": "Profile updated.",
-  "profile.invalid_locale": "Locale must be 'en' or 'bn'."
+  "profile.invalid_locale": "Locale must be 'en' or 'bn'.",
+  "plantcare.signup_required": "Sign up to add more plants.",
+  "plantcare.plant_not_found": "Plant not found."
 }

@@ -8,11 +8,12 @@ const CODE_LENGTH = 6;
 
 interface OtpScreenProps {
   phone: string;
+  guestUserId?: string;
   onVerified: (result: OtpVerifyResponse) => void;
   onEditPhone: () => void;
 }
 
-export default function OtpScreen({ phone, onVerified, onEditPhone }: OtpScreenProps) {
+export default function OtpScreen({ phone, guestUserId, onVerified, onEditPhone }: OtpScreenProps) {
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,7 +72,7 @@ export default function OtpScreen({ phone, onVerified, onEditPhone }: OtpScreenP
     setError(null);
     setBusy(true);
     try {
-      const result = await verifyOtp(phone, finalCode);
+      const result = await verifyOtp(phone, finalCode, guestUserId);
       onVerified(result);
     } catch (err) {
       if (err instanceof ApiError && err.code === "otp.invalid") {

@@ -1,0 +1,13 @@
+# LOCAL-ONLY workaround for a Docker Hub outage (cannot pull python:3.12-slim).
+# Builds FROM an already-local Newell image (for the python runtime), then
+# overlays the CURRENT shared lib + service source and installs deps from PyPI.
+# The real Dockerfile (FROM python:3.12-slim) is unchanged for CI/production.
+FROM newell-auth:latest
+WORKDIR /app
+COPY libs/newell_common /app/libs/newell_common
+RUN pip install --no-cache-dir -e /app/libs/newell_common
+COPY locales /app/locales
+COPY services/profile /app/services/profile
+RUN pip install --no-cache-dir -e /app/services/profile
+EXPOSE 8000
+CMD ["uvicorn", "profiles.main:app", "--host", "0.0.0.0", "--port", "8000"]
