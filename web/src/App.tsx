@@ -4,12 +4,14 @@ import { AuthProvider, useAuth } from "./auth";
 import {
   ApiError,
   getProfile,
+  guestLogin,
   type GuestLoginResponse,
   type OtpVerifyResponse,
   type Plant,
   type Profile,
 } from "./api";
 import GrowthStem, { type FlowStep } from "./components/GrowthStem";
+import LandingScreen from "./screens/LandingScreen";
 import PhoneScreen from "./screens/PhoneScreen";
 import OtpScreen from "./screens/OtpScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -17,9 +19,9 @@ import GardenScreen from "./screens/GardenScreen";
 import UploadScreen from "./screens/UploadScreen";
 import { themed } from "./theme";
 
-type Screen = "phone" | "otp" | "profile" | "garden" | "upload";
+type Screen = "home" | "phone" | "otp" | "profile" | "garden" | "upload";
 
-const STEP_BY_SCREEN: Record<Screen, FlowStep> = {
+const STEP_BY_SCREEN: Record<Exclude<Screen, "home">, FlowStep> = {
   phone: 1,
   otp: 2,
   profile: 3,
@@ -29,11 +31,13 @@ const STEP_BY_SCREEN: Record<Screen, FlowStep> = {
 
 function AppShell() {
   const { isAuthed, isGuest, userId, login, logout } = useAuth();
-  const [screen, setScreen] = useState<Screen>(() => (isAuthed ? "garden" : "phone"));
+  const [screen, setScreen] = useState<Screen>(() => (isAuthed ? "garden" : "home"));
   const [phone, setPhone] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [guestPlant, setGuestPlant] = useState<Plant | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
 
   // Returning session (token already in localStorage): skip straight to the
@@ -67,6 +71,21 @@ function AppShell() {
     setScreen("garden");
   }
 
+  async function handleStartGuest() {
+    if (starting) return;
+    setStarting(true);
+    setStartError(null);
+    try {
+      handleGuestContinue(await guestLogin());
+    } catch (err) {
+      setStartError(
+        err instanceof ApiError ? err.message : "Couldn't start the demo. Please try again."
+      );
+    } finally {
+      setStarting(false);
+    }
+  }
+
   async function openProfile() {
     setScreen("profile");
     if (profile) return;
@@ -84,7 +103,7 @@ function AppShell() {
     setProfile(null);
     setGuestPlant(null);
     setPhone("");
-    setScreen("phone");
+    setScreen("home");
   }
 
   const variants = reduceMotion
@@ -100,6 +119,20 @@ function AppShell() {
       };
 
   const transition = { duration: 0.32, ease: "easeOut" as const };
+
+  if (screen === "home") {
+    return (
+      <LandingScreen
+        onStartGuest={() => void handleStartGuest()}
+        onSignIn={() => {
+          setStartError(null);
+          setScreen("phone");
+        }}
+        starting={starting}
+        startError={startError}
+      />
+    );
+  }
 
   return (
     <div className="grain-surface flex min-h-screen w-full items-center justify-center px-4 py-12 sm:px-6">
