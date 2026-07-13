@@ -24,3 +24,6 @@ services:
   plantcare:
     build:
       dockerfile: services/plantcare/Dockerfile.local
+  interior:
+    build:
+      dockerfile: services/interior/Dockerfile.local

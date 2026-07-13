@@ -285,3 +285,84 @@ export async function getPlant(id: string): Promise<PlantDetail> {
     throw toApiError(err);
   }
 }
+
+// --- Rooms (Interior Design) -------------------------------------------------
+
+export interface RoomDesign {
+  style: string;
+  palette: string[];
+  layout_tips: string[];
+  furniture: string[];
+}
+
+export interface Room {
+  room_id: string;
+  name: string | null;
+  design: RoomDesign;
+  created_at: string;
+}
+
+export interface RoomSummary {
+  room_id: string;
+  name: string | null;
+  created_at: string;
+  latest_design: RoomDesign | null;
+}
+
+export interface RoomListResponse {
+  rooms: RoomSummary[];
+}
+
+export interface RoomLog {
+  image_ref: string;
+  design: RoomDesign;
+  created_at: string;
+}
+
+export interface RoomDetail {
+  room_id: string;
+  name: string | null;
+  created_at: string;
+  logs: RoomLog[];
+}
+
+export interface CreateRoomPayload {
+  name?: string;
+  image_ref: string;
+}
+
+export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
+  try {
+    const { data } = await client.post<Room>("/rooms", payload);
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function listRooms(): Promise<RoomListResponse> {
+  try {
+    const { data } = await client.get<RoomListResponse>("/rooms");
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function getRoom(id: string): Promise<RoomDetail> {
+  try {
+    const { data } = await client.get<RoomDetail>(`/rooms/${id}`);
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+export async function redesignRoom(id: string, imageRef: string): Promise<RoomLog> {
+  try {
+    const { data } = await client.post<RoomLog>(`/rooms/${id}/design`, { image_ref: imageRef });
+    return data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}

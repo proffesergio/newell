@@ -9,6 +9,7 @@ import {
   type OtpVerifyResponse,
   type Plant,
   type Profile,
+  type Room,
 } from "./api";
 import GrowthStem, { type FlowStep } from "./components/GrowthStem";
 import LandingScreen from "./screens/LandingScreen";
@@ -17,9 +18,11 @@ import OtpScreen from "./screens/OtpScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import GardenScreen from "./screens/GardenScreen";
 import UploadScreen from "./screens/UploadScreen";
+import RoomsScreen from "./screens/RoomsScreen";
+import UploadRoomScreen from "./screens/UploadRoomScreen";
 import { themed } from "./theme";
 
-type Screen = "home" | "phone" | "otp" | "profile" | "garden" | "upload";
+type Screen = "home" | "phone" | "otp" | "profile" | "garden" | "upload" | "rooms" | "upload-room";
 
 const STEP_BY_SCREEN: Record<Exclude<Screen, "home">, FlowStep> = {
   phone: 1,
@@ -27,6 +30,8 @@ const STEP_BY_SCREEN: Record<Exclude<Screen, "home">, FlowStep> = {
   profile: 3,
   garden: 3,
   upload: 3,
+  rooms: 3,
+  "upload-room": 3,
 };
 
 function AppShell() {
@@ -35,6 +40,7 @@ function AppShell() {
   const [phone, setPhone] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [guestPlant, setGuestPlant] = useState<Plant | null>(null);
+  const [guestRoom, setGuestRoom] = useState<Room | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -57,6 +63,7 @@ function AppShell() {
       userId: result.user_id,
     });
     setGuestPlant(null);
+    setGuestRoom(null);
     setProfile(null);
     setScreen("garden");
   }
@@ -102,6 +109,7 @@ function AppShell() {
     logout();
     setProfile(null);
     setGuestPlant(null);
+    setGuestRoom(null);
     setPhone("");
     setScreen("home");
   }
@@ -196,6 +204,39 @@ function AppShell() {
                   onAddPlant={() => setScreen("upload")}
                   onSignUp={() => setScreen("phone")}
                   onOpenProfile={() => void openProfile()}
+                  onOpenRooms={() => setScreen("rooms")}
+                />
+              </motion.div>
+            ) : screen === "rooms" ? (
+              <motion.div
+                key="rooms"
+                initial={variants.initial}
+                animate={variants.animate}
+                exit={variants.exit}
+                transition={transition}
+              >
+                <RoomsScreen
+                  isGuest={isGuest}
+                  guestRoom={guestRoom}
+                  onAddRoom={() => setScreen("upload-room")}
+                  onSignUp={() => setScreen("phone")}
+                  onOpenGarden={() => setScreen("garden")}
+                />
+              </motion.div>
+            ) : screen === "upload-room" ? (
+              <motion.div
+                key="upload-room"
+                initial={variants.initial}
+                animate={variants.animate}
+                exit={variants.exit}
+                transition={transition}
+              >
+                <UploadRoomScreen
+                  onDone={() => setScreen("rooms")}
+                  onCreated={(room) => {
+                    if (isGuest) setGuestRoom(room);
+                  }}
+                  onSignUp={() => setScreen("phone")}
                 />
               </motion.div>
             ) : screen === "upload" ? (

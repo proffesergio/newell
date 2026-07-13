@@ -9,6 +9,13 @@ class Diagnosis(BaseModel):
     care_steps: list[str]
 
 
+class RoomDesign(BaseModel):
+    style: str
+    palette: list[str]
+    layout_tips: list[str]
+    furniture: list[str]
+
+
 class AnalyzeRequest(BaseModel):
     image_ref: str
     task: str

@@ -5,7 +5,8 @@
 Newell is a mobile-first platform: snap a photo, get clear advice anyone can follow, and track progress over time. It's built as decoupled Python (FastAPI) microservices behind a single API gateway, with a React web app. Clients never call AI models directly — everything goes through the gateway.
 
 - Design spec: `docs/superpowers/specs/2026-07-12-newell-platform-design.md`
-- Runbooks: `docs/RUNBOOK-p1.md` (auth), `docs/RUNBOOK-p2.md` (tree planting + guest)
+- Runbooks: `docs/RUNBOOK-p1.md` (auth), `docs/RUNBOOK-p2.md` (tree planting + guest),
+  `docs/RUNBOOK-p3.md` (interior design)
 - **Admin / ops guide:** `docs/ADMIN-GUIDE.md` (test backend, frontend, Docker, servers; deploy)
 
 ---
@@ -13,10 +14,15 @@ Newell is a mobile-first platform: snap a photo, get clear advice anyone can fol
 ## Features
 
 ### 🏡 Landing homepage
-A marketing homepage is the entry point (not the login screen): animated background, animated
-header/footer with highlighted calls-to-action, and scroll-revealed sections explaining what Newell
-does, how it works, and how to use it well. "Try it free — as guest" starts a demo instantly.
-_Web: `web/src/screens/LandingScreen.tsx`, `web/src/landing/`._
+A marketing homepage is the entry point (not the login screen):
+- **Natural/physics animated background** — starfield, botanical aurora, orbiting O₂/O₃ molecules,
+  gravity-drifting particles, and an atmospheric horizon glow (all reduced-motion aware).
+- **Theme toggle** (light/dark, persisted, overrides the OS setting) and **language toggle**
+  (English ↔ বাংলা) in an animated header; animated footer with highlighted CTAs.
+- **Scroll-revealed sections:** what you can grow, how it works, a full feature grid, how to use it
+  well, and a call-to-action band. All copy is bilingual (en/bn).
+- **"Try it free — as guest"** starts a demo instantly.
+_Web: `web/src/screens/LandingScreen.tsx`, `web/src/landing/`, `web/src/prefs.tsx`._
 
 ### 🔐 Authentication & guest mode
 - **Phone-OTP login** with JWT access + rotating refresh tokens (mock SMS in dev — code printed to the
@@ -38,12 +44,24 @@ _Service: `services/profile`; catalogs in `locales/`._
 - **Growth timeline** per plant; guest-gated for saving/history.
 _Services: `services/media`, `services/ai_gateway` (PlantDoctor tool), `services/plantcare`._
 
+### 🛋️ Interior Design (AI room styling)
+- Upload a room photo → stored in object storage (MinIO/S3).
+- **AI design:** a style direction, colour palette (hex swatches), layout tips, and furniture
+  suggestions (deterministic mock now; reuses the same `LLMProvider` seam via a RoomDesigner tool).
+- **Redesign history** per room; guests get one demo room, then hit the signup gate — their demo
+  room migrates in-place on signup, exactly like plants.
+- In the web app: from the garden, tap **Rooms** to switch domains; add a room to see its design card
+  (palette swatches, layout tips, furniture).
+_Services: `services/media`, `services/ai_gateway` (RoomDesigner tool), `services/interior`.
+Web: `web/src/screens/RoomsScreen.tsx`, `web/src/screens/UploadRoomScreen.tsx`,
+`web/src/components/RoomDesignCard.tsx`._
+
 ### 🧭 API gateway
 Single entry point: verifies JWTs, injects `X-User-Id` + `X-User-Role`, rate-limits, and reverse-proxies
 to services. Clients only ever talk to the gateway. _Service: `services/gateway`._
 
 ### 🧱 Coming next
-Home & Room building, Interior design, and the Personal Problem Solver modules reuse this same pattern.
+Home & Room building and the Personal Problem Solver modules reuse this same pattern.
 A real standalone PlantDoctor MCP server and real vision-LLM wiring are planned (P2.5).
 
 ---
@@ -75,7 +93,7 @@ python -m venv .venv
 .venv/Scripts/python.exe -m pip install ruff pytest pytest-asyncio httpx
 .venv/Scripts/python.exe -m pip install -e ./libs/newell_common -e ./services/auth \
   -e ./services/profile -e ./services/media -e ./services/ai_gateway \
-  -e ./services/plantcare -e ./services/gateway
+  -e ./services/plantcare -e ./services/interior -e ./services/gateway
 .venv/Scripts/python.exe -m pytest -q     # unit/integration tests (hermetic)
 .venv/Scripts/python.exe -m ruff check .  # lint
 ```
@@ -88,8 +106,9 @@ services/gateway     API gateway (JWT verify + reverse proxy)
 services/auth        phone-OTP + guest login, JWT, in-place migration
 services/profile     user profile + locale (en/bn)
 services/media       image upload -> MinIO
-services/ai_gateway  LLMProvider abstraction + deterministic PlantDoctor tool
+services/ai_gateway  LLMProvider abstraction + deterministic PlantDoctor/RoomDesigner tools
 services/plantcare   plants, growth timeline, guest gating
+services/interior    rooms, design history, guest gating (interior design)
 web/                 React + Vite + Tailwind + Framer Motion (landing + app)
 locales/             en/bn message catalogs
 infra/               docker-compose (+ local offline override), env example
@@ -104,3 +123,4 @@ React 18 · TypeScript · Vite · Tailwind CSS · Framer Motion · Docker Compos
 ## Status
 
 P0 foundation · P1 auth + profile + web login · P2 Tree Planting + guest mode — **done & live-verified.**
+P3 Interior Design — **built (backend 59 tests green, web build green); pending live Docker verification.**

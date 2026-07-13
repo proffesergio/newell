@@ -5,15 +5,19 @@ import { themed } from "../theme";
 interface SignupGateProps {
   onSignUp: () => void;
   onDismiss?: () => void;
+  title?: string;
+  description?: string;
 }
 
 /**
  * Shown whenever a SignupRequiredError bubbles up from the API — a guest
- * hit a gated action (a 2nd plant, the saved garden, etc). Routes into the
- * existing phone-OTP flow; the caller is responsible for passing the
- * guest's user_id along to verifyOtp so their demo plant migrates.
+ * hit a gated action (a 2nd plant, a 2nd room, the saved history, etc).
+ * Routes into the existing phone-OTP flow; the caller is responsible for
+ * passing the guest's user_id along to verifyOtp so their demo work migrates.
+ * Copy defaults to the garden flow; pass title/description to reuse it for
+ * other domains (e.g. interior design).
  */
-export default function SignupGate({ onSignUp, onDismiss }: SignupGateProps) {
+export default function SignupGate({ onSignUp, onDismiss, title, description }: SignupGateProps) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -32,10 +36,11 @@ export default function SignupGate({ onSignUp, onDismiss }: SignupGateProps) {
 
       <div className="flex flex-col gap-2">
         <h2 className={`font-display text-2xl font-medium ${themed.heading}`}>
-          Keep this one growing.
+          {title ?? "Keep this one growing."}
         </h2>
         <p className={`text-sm ${themed.muted}`}>
-          Sign up to save your garden and analyze more plants — your demo plant comes with you.
+          {description ??
+            "Sign up to save your garden and analyze more plants — your demo plant comes with you."}
         </p>
       </div>
 

@@ -6,5 +6,7 @@
   "profile.updated": "Profile updated.",
   "profile.invalid_locale": "Locale must be 'en' or 'bn'.",
   "plantcare.signup_required": "Sign up to add more plants.",
-  "plantcare.plant_not_found": "Plant not found."
+  "plantcare.plant_not_found": "Plant not found.",
+  "interior.signup_required": "Sign up to design more rooms.",
+  "interior.room_not_found": "Room not found."
 }

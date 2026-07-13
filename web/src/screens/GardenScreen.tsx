@@ -11,6 +11,7 @@ interface GardenScreenProps {
   onAddPlant: () => void;
   onSignUp: () => void;
   onOpenProfile: () => void;
+  onOpenRooms: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -45,6 +46,7 @@ export default function GardenScreen({
   onAddPlant,
   onSignUp,
   onOpenProfile,
+  onOpenRooms,
 }: GardenScreenProps) {
   const [plants, setPlants] = useState<PlantSummary[] | null>(null);
   const [loading, setLoading] = useState(!isGuest);
@@ -104,15 +106,24 @@ export default function GardenScreen({
               : "Every plant you've checked in on, in one place."}
           </p>
         </div>
-        {!isGuest ? (
+        <div className="flex shrink-0 items-center gap-3">
           <button
             type="button"
-            onClick={onOpenProfile}
-            className={`shrink-0 text-xs underline decoration-current/40 underline-offset-2 ${themed.muted} hover:text-[color:var(--on-surface)]`}
+            onClick={onOpenRooms}
+            className={`text-xs underline decoration-current/40 underline-offset-2 ${themed.muted} hover:text-[color:var(--on-surface)]`}
           >
-            Profile
+            Rooms
           </button>
-        ) : null}
+          {!isGuest ? (
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              className={`text-xs underline decoration-current/40 underline-offset-2 ${themed.muted} hover:text-[color:var(--on-surface)]`}
+            >
+              Profile
+            </button>
+          ) : null}
+        </div>
       </header>
 
       {isGuest ? (

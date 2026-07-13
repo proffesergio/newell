@@ -32,8 +32,14 @@
   --error: #f2a390;
 }
 
+/*
+ * Light palette. Applied when the user's OS prefers light AND they haven't made
+ * an explicit choice (:root:not([data-theme])), OR when they explicitly pick
+ * light via the header toggle (:root[data-theme="light"]). An explicit
+ * data-theme always wins over the OS preference.
+ */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     color-scheme: light;
     --bg-app: #f5f3ec;
     --on-surface: #12241b;
@@ -45,6 +51,19 @@
     --code-bg: rgba(18, 36, 27, 0.08);
     --error: #b23b2e;
   }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg-app: #f5f3ec;
+  --on-surface: #12241b;
+  --muted: #3a5a40;
+  --card-bg: rgba(18, 36, 27, 0.04);
+  --card-border: rgba(58, 90, 64, 0.16);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --input-border: rgba(58, 90, 64, 0.25);
+  --code-bg: rgba(18, 36, 27, 0.08);
+  --error: #b23b2e;
 }
 
 html,

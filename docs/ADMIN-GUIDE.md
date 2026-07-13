@@ -22,7 +22,7 @@ python -m venv .venv
 .venv/Scripts/python.exe -m pip install -U pip ruff pytest pytest-asyncio httpx
 .venv/Scripts/python.exe -m pip install -e ./libs/newell_common -e ./services/auth \
   -e ./services/profile -e ./services/media -e ./services/ai_gateway \
-  -e ./services/plantcare -e ./services/gateway
+  -e ./services/plantcare -e ./services/interior -e ./services/gateway
 ```
 
 ---
@@ -61,7 +61,7 @@ docker compose -f infra/docker-compose.yml up -d --build
 docker compose -f infra/docker-compose.yml ps        # all should be healthy
 curl http://localhost:8080/healthz                   # gateway
 ```
-Services (internal port 8000, gateway on 8080): `auth profile media ai_gateway plantcare gateway`
+Services (internal port 8000, gateway on 8080): `auth profile media ai_gateway plantcare interior gateway`
 plus `postgres redis minio`. Each self-migrates its tables on startup (`create_all`).
 
 ### End-to-end smoke test (guest → AI → migration)
@@ -78,6 +78,17 @@ docker compose -f infra/docker-compose.yml logs auth | grep "verification code i
 ```
 See `docs/RUNBOOK-p2.md` for the full walkthrough.
 
+Interior Design uses the same shape at `/rooms` (guest gets one demo room, then `403 signup_required`):
+```bash
+# create room -> returns {design:{style,palette,layout_tips,furniture}}
+curl -s -X POST localhost:8080/rooms -H "Authorization: Bearer <t>" \
+  -H "Content-Type: application/json" -d '{"name":"Living room","image_ref":"<url>"}'
+# redesign an existing room (user only)
+curl -s -X POST localhost:8080/rooms/<room_id>/design -H "Authorization: Bearer <t>" \
+  -H "Content-Type: application/json" -d '{"image_ref":"<url>"}'
+```
+See `docs/RUNBOOK-p3.md` for the full interior-design walkthrough.
+
 ### Reset data (after any DB schema change)
 ```bash
 docker compose -f infra/docker-compose.yml down -v   # drops Postgres/MinIO volumes
@@ -92,7 +103,7 @@ Cause: this machine can't reach Docker Hub. Build from **local** base images wit
 ```bash
 export DOCKER_BUILDKIT=0
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.local.yml \
-  build auth profile media ai_gateway plantcare gateway
+  build auth profile media ai_gateway plantcare interior gateway
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.local.yml \
   up -d --no-build
 ```
@@ -123,7 +134,8 @@ npx tsc --noEmit   # typecheck only
 ```
 Manual check: open the dev URL → landing page (animated) → **Try it free — as guest** → upload a photo
 → diagnosis card → 2nd plant blocked → **Sign in** works. Theme follows OS light/dark; reduced-motion
-is respected.
+is respected. From the garden, tap **Rooms** → add a room → design card (style, palette swatches,
+layout tips, furniture) → 2nd room blocked as guest.
 
 ---
 

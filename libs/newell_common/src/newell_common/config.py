@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     profile_url: str = "http://profile:8000"
     media_url: str = "http://media:8000"
     plantcare_url: str = "http://plantcare:8000"
+    interior_url: str = "http://interior:8000"
 
     ai_provider: str = "mock"
     ai_gateway_url: str = "http://ai_gateway:8000"

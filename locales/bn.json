@@ -6,5 +6,7 @@
   "profile.updated": "প্রোফাইল হালনাগাদ হয়েছে।",
   "profile.invalid_locale": "লোকেল অবশ্যই 'en' অথবা 'bn' হতে হবে।",
   "plantcare.signup_required": "আরও গাছ যোগ করতে সাইন আপ করুন।",
-  "plantcare.plant_not_found": "গাছটি পাওয়া যায়নি।"
+  "plantcare.plant_not_found": "গাছটি পাওয়া যায়নি।",
+  "interior.signup_required": "আরও ঘর ডিজাইন করতে সাইন আপ করুন।",
+  "interior.room_not_found": "ঘরটি পাওয়া যায়নি।"
 }

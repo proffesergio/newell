@@ -133,3 +133,21 @@ async def proxy_plants(
         request,
         extra_headers={"X-User-Id": user_id, "X-User-Role": role},
     )
+
+
+@router.api_route("/rooms", methods=["GET", "POST", "PATCH", "DELETE"])
+@router.api_route("/rooms/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
+async def proxy_rooms(
+    request: Request,
+    identity: tuple[str, str] = Depends(current_identity),
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> Response:
+    """Forward to the Interior Design service, injecting the caller's user id and role."""
+    user_id, role = identity
+    settings = get_settings()
+    return await _forward(
+        client,
+        settings.interior_url,
+        request,
+        extra_headers={"X-User-Id": user_id, "X-User-Role": role},
+    )
